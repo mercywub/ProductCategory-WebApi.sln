@@ -23,7 +23,33 @@ namespace ProductCategory_WebApi.Application.Mapper
             CreateMap<ProductSize,SizeDto>().ReverseMap();
             CreateMap<Sizes,SizeDto>().ReverseMap();
             CreateMap<Gallary,GalleryDto>().ReverseMap();
-            
+            CreateMap<Cart, CartDto>().ReverseMap();
+            CreateMap<CartItem, CartItemDto>().ReverseMap();
+            CreateMap<User, UserLoginDto>().ReverseMap();
+            CreateMap<User, UserResponseDto>().ReverseMap();
+            CreateMap<UserRegisterDto, User>()
+                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()).ReverseMap(); // Hash later
+            CreateMap<ResetPasswordOtpDto, User>()
+           .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => BCrypt.Net.BCrypt.HashPassword(src.NewPassword))).
+           ReverseMap();
+            CreateMap<User,UserDto>().ReverseMap();
+            CreateMap<Order, OrderDto>().ReverseMap();
+            CreateMap<OrderItem, OrderItemDto>().ReverseMap();
+            CreateMap<Payment, PaymentDto>().ReverseMap();
+           
+            CreateMap<PaymentCreateDto, Payment>().ReverseMap();
+            CreateMap<Address, AddressDto>().ReverseMap();
+            CreateMap<CreateAddressDto, Address>();
+            CreateMap<UpdateAddressDto, Address>();
+
+            CreateMap<PaymentRequestDto, Payment>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
+                .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
+                .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod))
+                .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+
         }
     }
 }

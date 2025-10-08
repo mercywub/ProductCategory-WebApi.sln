@@ -19,12 +19,14 @@ namespace ProductCategory_WebApi.Domain.Models
         public string? ProductImageFeatured { get; set; }
         public string? Status { get; set; }
 
+
         public Guid ProductCategoryId { get; set; }     // ✅ FK
         public ProductCategory ProductCategory { get; set; } = null!;
 
         public ICollection<ProductColor>? ProductColors { get; set; }
         public ICollection<ProductSize>? ProductSizes { get; set; }
         public ICollection<ProductGallery>? ProductGalleries { get; set; }
+        public ICollection<OrderItem> OrderItems { get; set; }
 
     }
 

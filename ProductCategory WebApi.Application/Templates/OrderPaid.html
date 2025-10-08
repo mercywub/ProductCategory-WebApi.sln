@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Payment Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f8fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            background: #ffffff;
+            max-width: 600px;
+            margin: 40px auto;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #4CAF50;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+            .header h2 {
+                margin: 0;
+            }
+
+        .content {
+            padding: 30px;
+        }
+
+            .content h3 {
+                color: #4CAF50;
+            }
+
+        .details {
+            margin: 20px 0;
+        }
+
+            .details li {
+                margin: 8px 0;
+            }
+
+        .footer {
+            background-color: #f1f1f1;
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 16px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 15px;
+        }
+
+            .btn:hover {
+                background-color: #45a049;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2>Payment Confirmation</h2>
+        </div>
+
+        <div class="content">
+            <p>Dear <strong>{{UserName}}</strong>,</p>
+
+            <p>
+                We are pleased to inform you that your payment for Order
+                <strong>#{{OrderId}}</strong> has been received successfully.
+            </p>
+
+            <h3>Order Summary</h3>
+            <ul class="details">
+                <li><strong>Total Amount:</strong> ${{TotalAmount}}</li>
+                <li><strong>Date:</strong> {{Date}}</li>
+            </ul>
+
+            <p>Your order is now being processed and will be shipped soon.</p>
+
+            <p>Thank you for shopping with us!</p>
+
+            <a href="{{OrderDetailsUrl}}" class="btn">View Order Details</a>
+        </div>
+
+        <div class="footer">
+            &copy; {{Year}} E-Commerce App. All rights reserved.
+        </div>
+    </div>
+
+</body>
+</html>

@@ -16,12 +16,124 @@ namespace ProductCategory_WebApi.Infrastructure.Datas
         public DbSet<ProductColor> ProductColors { get; set; }
         public DbSet<ProductSize> ProductSizes { get; set; }
         public DbSet<ProductGallery> ProductGalleries { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<PasswordResetOtp> PasswordResetOtps { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<Address> Addresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Product ↔ Category (One-to-Many)
+            // =========================
+            // USER & ADDRESS RELATIONSHIP
+            // =========================
+            modelBuilder.Entity<Address>()
+                .HasOne(a => a.User)
+                .WithMany(u => u.Addresses)
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =========================
+            // ORDER CONFIGURATION
+            // =========================
+            modelBuilder.Entity<Order>()
+                .HasKey(o => o.Id);
+
+            modelBuilder.Entity<Order>()
+                .Property(o => o.TotalAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Order>()
+               .HasOne(o => o.User)
+               .WithMany(u => u.Orders)
+               .HasForeignKey(o => o.UserId)
+               .OnDelete(DeleteBehavior.Restrict); // ✅ prevents multiple cascade paths
+
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Address)
+                .WithMany() // no Orders collection in Address
+               .HasForeignKey(o => o.AddressId)
+               .OnDelete(DeleteBehavior.Restrict); // ✅ prevents multiple cascade paths
+
+            // =========================
+            // ORDER ITEM CONFIGURATION
+            // =========================
+            modelBuilder.Entity<OrderItem>()
+                .HasKey(oi => oi.Id);
+
+            modelBuilder.Entity<OrderItem>()
+                .Property(oi => oi.Price)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<OrderItem>()
+               .HasOne(oi => oi.Order)
+               .WithMany(o => o.OrderItems)
+               .HasForeignKey(oi => oi.OrderId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<OrderItem>()
+             .HasOne(oi => oi.Product)
+             .WithMany(p => p.OrderItems)
+             .HasForeignKey(oi => oi.ProductId)
+             .OnDelete(DeleteBehavior.NoAction); // ✅ safer
+
+            // =========================
+            // PAYMENT CONFIGURATION
+            // =========================
+            modelBuilder.Entity<Payment>()
+                .HasKey(p => p.Id);
+
+            modelBuilder.Entity<Payment>()
+                .Property(p => p.Amount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.Order)
+                .WithOne(o => o.Payment)
+                .HasForeignKey<Payment>(p => p.OrderId)
+                .OnDelete(DeleteBehavior.NoAction); // ✅ avoid cycle
+
+            // =========================
+            // PASSWORD RESET OTP
+            // =========================
+            modelBuilder.Entity<PasswordResetOtp>()
+                .HasOne(otp => otp.User)
+                .WithMany(u => u.PasswordResetOtps)
+                .HasForeignKey(otp => otp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =========================
+            // USER ↔ CART (1:1)
+            // =========================
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Cart)
+                .WithOne(c => c.User)
+                .HasForeignKey<Cart>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =========================
+            // CART ↔ CART ITEMS (1:M)
+            // =========================
+            modelBuilder.Entity<Cart>()
+                .HasMany(c => c.CartItems)
+                .WithOne(ci => ci.Cart)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Product)
+                .WithMany()
+                .HasForeignKey(ci => ci.ProductId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // =========================
+            // PRODUCT RELATIONSHIPS
+            // =========================
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.ProductCategory)
                 .WithMany(c => c.Products)
@@ -76,7 +188,9 @@ namespace ProductCategory_WebApi.Infrastructure.Datas
                 .HasForeignKey(pg => pg.GalleryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Decimal config
+            // =========================
+            // DECIMAL CONFIGURATION
+            // =========================
             modelBuilder.Entity<Product>()
                 .Property(p => p.Price)
                 .HasColumnType("decimal(18,2)");
