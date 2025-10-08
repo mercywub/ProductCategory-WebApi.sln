@@ -218,6 +218,7 @@ namespace ProductCategory_WebApi.Infrastructure.Seeds
                     Id = Guid.NewGuid(),
                     OrderId = order.Id,
                     Amount = order.TotalAmount,
+                    TransactionId = Guid.NewGuid().ToString(),
                     PaymentMethod = "Credit Card",
                     PaymentDate = DateTime.UtcNow,
                     Status = "Completed"

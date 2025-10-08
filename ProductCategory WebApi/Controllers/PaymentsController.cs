@@ -10,54 +10,52 @@ namespace ProductCategory_WebApi.Controllers
     [ApiController]
     public class PaymentsController : ControllerBase
     {
-        private readonly PaymentService _service;
-        private readonly IPaymentService _paymentService;
+        private readonly PaymentService _paymentService;
 
-        public PaymentsController(PaymentService service, IPaymentService paymentService)
+        public PaymentsController(PaymentService paymentService)
         {
-            _service = service;
             _paymentService = paymentService;
         }
-
-        [HttpPost("process")]
-        public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDto dto)
+        [HttpPost("stripe")]
+        public async Task<IActionResult> CreateStripePayment([FromBody] StripePaymentRequestDto request)
         {
-            try
-            {
-                var payment = await _paymentService.ProcessPaymentAsync(dto);
-                return Ok(new
-                {
-                    Message = "Payment processed successfully",
-                    Payment = payment
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var payment = await _paymentService.CreateStripePaymentAsync(request);
+            return Ok(payment); // Return PaymentIntent info for frontend to confirm payment
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetPayments()
+        {
+            var payments = await _paymentService.GetPaymentsAsync();
+            return Ok(payments);
         }
 
-        [HttpPost("pay")]
-        public async Task<IActionResult> PayOrder([FromBody] PaymentRequestDto dto)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetPayment(Guid id)
         {
-            var result = await _service.ProcessPaymentAsync(dto.OrderId, dto.Amount, dto.PaymentMethod);
-            if (!result) return BadRequest("Payment failed or order not found.");
-
-            return Ok("Payment successful. Email notification sent.");
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] PaymentCreateDto dto)
-        {
-            var payment = await _service.CreatePaymentAsync(dto);
+            var payment = await _paymentService.GetPaymentByIdAsync(id);
+            if (payment == null) return NotFound();
             return Ok(payment);
         }
 
-        [HttpGet("by-order/{orderId:guid}")]
-        public async Task<IActionResult> GetByOrder(Guid orderId)
+        [HttpPost]
+        public async Task<IActionResult> CreatePayment(PaymentCreateDto dto)
         {
-            var payments = await _service.GetPaymentsByOrderAsync(orderId);
-            return Ok(payments);
+            var payment = await _paymentService.CreatePaymentAsync(dto);
+            return CreatedAtAction(nameof(GetPayment), new { id = payment.Id }, payment);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePaymentStatus(Guid id, UpdatePaymentDto dto)
+        {
+            await _paymentService.UpdatePaymentStatusAsync(id, dto);
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePayment(Guid id)
+        {
+            await _paymentService.DeletePaymentAsync(id);
+            return NoContent();
         }
     }
 }

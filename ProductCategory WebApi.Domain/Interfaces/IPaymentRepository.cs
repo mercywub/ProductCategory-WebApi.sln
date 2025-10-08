@@ -9,6 +9,10 @@ namespace ProductCategory_WebApi.Domain.Interfaces
 {
     public interface IPaymentRepository : IGenericRepository<Payment>
     {
-        Task<IEnumerable<Payment>> GetPaymentsByOrderAsync(Guid orderId);
+        Task<Payment> GetPaymentByIdAsync(Guid id);
+        Task<IEnumerable<Payment>> GetPaymentsAsync();
+        Task AddPaymentAsync(Payment payment);
+        Task UpdatePaymentAsync(Payment payment);
+        Task DeletePaymentAsync(Guid id);
     }
 }

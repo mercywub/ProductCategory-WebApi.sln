@@ -8,11 +8,12 @@ namespace ProductCategory_WebApi.Application.Dtos
 {
     public class PaymentDto
     {
-        public Guid  Id { get; set; }
+        public Guid Id { get; set; }
         public Guid OrderId { get; set; }
         public decimal Amount { get; set; }
-        public string PaymentMethod { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; }
+        public string Status { get; set; }
+        public string StripePaymentIntentId { get; set; }
         public DateTime PaymentDate { get; set; }
     }
 }

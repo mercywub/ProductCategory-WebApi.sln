@@ -21,8 +21,8 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+Console.WriteLine($"Stripe Secret Key: {StripeConfiguration.ApiKey}");
 
-builder.Services.AddScoped<IPaymentService, StripePaymentService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();

@@ -1,127 +1,119 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.Extensions.Configuration;
 using ProductCategory_WebApi.Application.Dtos;
 using ProductCategory_WebApi.Domain.Interfaces;
 using ProductCategory_WebApi.Domain.Models;
+using Stripe;
 
 namespace ProductCategory_WebApi.Application.Services
 {
     public class PaymentService
     {
-        private readonly IPaymentRepository _paymentRepo;
-        private readonly IEmailService _emailService;
+        private readonly IPaymentRepository _paymentRepository;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _configuration;
 
-        private readonly IGenericRepository<Order> _orderRepo;
-
-        public PaymentService( IPaymentRepository paymentRepo, IGenericRepository<Order> orderRepo, IEmailService emailService, IMapper mapper)
+        public PaymentService(IPaymentRepository paymentRepository, IMapper mapper, IConfiguration configuration)
         {
-            _paymentRepo = paymentRepo;
-            _orderRepo = orderRepo;
-            _emailService = emailService;
+            _paymentRepository = paymentRepository;
             _mapper = mapper;
+            _configuration = configuration;
+
+            var secretKey = _configuration["Stripe:SecretKey"];
+            if (string.IsNullOrEmpty(secretKey))
+                throw new Exception("Stripe Secret Key is missing. Check your appsettings.json.");
+
+            StripeConfiguration.ApiKey = secretKey;
         }
 
-        public async Task<Payment> ProcessPaymentAsync(PaymentRequestDto dto)
+        /// <summary>
+        /// Creates a Stripe PaymentIntent and saves it to the database
+        /// </summary>
+        public async Task<PaymentDto> CreateStripePaymentAsync(StripePaymentRequestDto request)
         {
-            // ✅ Map DTO → Payment entity
-            var payment = _mapper.Map<Payment>(dto);
-
-            // ✅ Save payment
-            await _paymentRepo.AddAsync(payment);
-            await _paymentRepo.SaveChangesAsync();
-
-            // ✅ Mark related order as paid
-            var order = await _orderRepo.GetByIdAsync(payment.OrderId);
-            if (order != null)
+            var options = new PaymentIntentCreateOptions
             {
-               
-                await _orderRepo.UpdateAsync(order);
-                await _orderRepo.SaveChangesAsync();
+                Amount = (long)(request.Amount * 100),
+                Currency = request.Currency,
+                PaymentMethodTypes = new List<string> { "card" }
+            };
 
-                // ✅ Send email notification
-                await _emailService.SendOrderPaidNotificationAsync(order);
+            var service = new PaymentIntentService();
+            PaymentIntent paymentIntent = null;
+
+            try
+            {
+                paymentIntent = await service.CreateAsync(options);
+            }
+            catch (StripeException ex)
+            {
+                throw new Exception($"Stripe error: {ex.StripeError.Message}");
             }
 
-            return payment;
+            var payment = new Payment
+            {
+                Id = Guid.NewGuid(),
+                OrderId = request.OrderId,
+                Amount = request.Amount,
+                PaymentMethod = "Stripe",
+                Status = "Pending",
+                StripePaymentIntentId = paymentIntent.Id,
+                Currency = request.Currency,
+                PaymentDate = DateTime.UtcNow
+            };
+
+            await _paymentRepository.AddPaymentAsync(payment);
+            return _mapper.Map<PaymentDto>(payment);
         }
 
+
+        /// <summary>
+        /// Create offline/manual payment (optional)
+        /// </summary>
         public async Task<PaymentDto> CreatePaymentAsync(PaymentCreateDto dto)
         {
-            var order = await _orderRepo.GetByIdAsync(dto.OrderId);
-            if (order == null) throw new ArgumentException("Order not found");
-
             var payment = new Payment
             {
                 Id = Guid.NewGuid(),
                 OrderId = dto.OrderId,
                 Amount = dto.Amount,
                 PaymentMethod = dto.PaymentMethod,
-                Status = "Completed",
+                Status = "Pending",
                 PaymentDate = DateTime.UtcNow
             };
 
-            await _paymentRepo.AddAsync(payment);
-
-            // Optionally: update order status
-            order.Status = "Paid";
-            await _orderRepo.UpdateAsync(order);
-
-            return new PaymentDto
-            {
-                Id = payment.Id,
-                OrderId = payment.OrderId,
-                Amount = payment.Amount,
-                PaymentMethod = payment.PaymentMethod,
-                Status = payment.Status,
-                PaymentDate = payment.PaymentDate
-            };
+            await _paymentRepository.AddPaymentAsync(payment);
+            return _mapper.Map<PaymentDto>(payment);
         }
 
-        public async Task<IEnumerable<PaymentDto>> GetPaymentsByOrderAsync(Guid orderId)
+        public async Task<IEnumerable<PaymentDto>> GetPaymentsAsync()
         {
-            var payments = await _paymentRepo.GetPaymentsByOrderAsync(orderId);
-            return payments.Select(p => new PaymentDto
-            {
-                Id = p.Id,
-                OrderId = p.OrderId,
-                Amount = p.Amount,
-                PaymentMethod = p.PaymentMethod,
-                Status = p.Status,
-                PaymentDate = p.PaymentDate
-            }).ToList();
+            var payments = await _paymentRepository.GetPaymentsAsync();
+            return _mapper.Map<IEnumerable<PaymentDto>>(payments);
         }
 
-
-        public async Task<bool> ProcessPaymentAsync(Guid orderId, decimal amount, string method)
+        public async Task<PaymentDto> GetPaymentByIdAsync(Guid id)
         {
-            var order = await _orderRepo.GetByIdAsync(orderId);
-            if (order == null) return false;
+            var payment = await _paymentRepository.GetPaymentByIdAsync(id);
+            return _mapper.Map<PaymentDto>(payment);
+        }
 
-            var payment = new Payment
+        public async Task UpdatePaymentStatusAsync(Guid id, UpdatePaymentDto dto)
+        {
+            var payment = await _paymentRepository.GetPaymentByIdAsync(id);
+            if (payment != null)
             {
-                Id = Guid.NewGuid(),
-                OrderId = orderId,
-                Amount = amount,
-                PaymentMethod = method,
-                Status = "Paid",
-                PaymentDate = DateTime.UtcNow
-            };
+                payment.Status = dto.Status;
+                await _paymentRepository.UpdatePaymentAsync(payment);
+            }
+        }
 
-            await _paymentRepo.AddAsync(payment);
-
-            // Mark order as Paid
-            order.Status = "Paid";
-            await _orderRepo.UpdateAsync(order);
-
-            // Send email notification
-            await _emailService.SendOrderConfirmationEmailAsync(order.User.Email, order.Id.ToString(), amount);
-
-            return true;
+        public async Task DeletePaymentAsync(Guid id)
+        {
+            await _paymentRepository.DeletePaymentAsync(id);
         }
     }
 }

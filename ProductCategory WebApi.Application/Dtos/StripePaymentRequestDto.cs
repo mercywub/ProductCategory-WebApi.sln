@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace ProductCategory_WebApi.Application.Dtos
 {
-    public class PaymentRequestDto
+    public class StripePaymentRequestDto
     {
         public Guid OrderId { get; set; }
         public decimal Amount { get; set; }
-        public string PaymentMethod { get; set; } = string.Empty; // e.g., "CreditCard", "PayPal"
+        public string Currency { get; set; } = "USD";
     }
 }

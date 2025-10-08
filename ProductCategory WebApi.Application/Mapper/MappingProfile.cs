@@ -36,18 +36,14 @@ namespace ProductCategory_WebApi.Application.Mapper
             CreateMap<Order, OrderDto>().ReverseMap();
             CreateMap<OrderItem, OrderItemDto>().ReverseMap();
             CreateMap<Payment, PaymentDto>().ReverseMap();
-           
+            CreateMap<Payment, UpdatePaymentDto>().ReverseMap();
+
             CreateMap<PaymentCreateDto, Payment>().ReverseMap();
             CreateMap<Address, AddressDto>().ReverseMap();
             CreateMap<CreateAddressDto, Address>();
             CreateMap<UpdateAddressDto, Address>();
 
-            CreateMap<PaymentRequestDto, Payment>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.NewGuid()))
-                .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
-                .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount))
-                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod))
-                .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => DateTime.UtcNow));
+           
 
 
         }

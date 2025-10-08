@@ -23,9 +23,14 @@ namespace ProductCategory_WebApi.Domain.Models
         public decimal Amount { get; set; }
 
         public string Status { get; set; } = "Pending"; // Pending, Completed, Failed
+        [StringLength(100)]
+        public string StripePaymentIntentId { get; set; } // Stripe PaymentIntent ID
+
+        [StringLength(10)]
+        public string Currency { get; set; } = "USD";
 
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 
-        public string TransactionId { get; set; }
+        public string TransactionId { get; set; } 
     }
 }
